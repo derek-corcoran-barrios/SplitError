@@ -1,0 +1,94 @@
+```{r reprex-options, include = FALSE}
+options(
+  keep.source = TRUE,
+  rlang_backtrace_on_error_report = "full",
+  crayon.enabled = FALSE,
+  reprex.current_venue = "gh"
+)
+```
+
+```{r, results = 'asis', echo = FALSE, include = file.exists('.Rprofile'), eval = file.exists('.Rprofile')}
+cat(sprintf("*Local `.Rprofile` detected at `%s`*", normalizePath(".Rprofile")))
+```
+
+---
+output:
+  reprex::reprex_document:
+    venue: "gh"
+    advertise: FALSE
+    session_info: TRUE
+    style: TRUE
+    comment: "#;-)"
+    tidyverse_quiet: FALSE
+    std_out_err: TRUE
+knit: reprex::reprex_render
+---
+
+# Unexpected Behavior with `terra::split` Function
+
+**Issue Overview:**
+
+I am encountering unexpected behavior while attempting to split a polygon into two separate polygons using the `terra::split` function. In the following example, I am using the Bilag.shp dataset from [this repository](https://github.com/derek-corcoran-barrios/SplitError) and trying to split a specific arm of a fjord using a line. The split operation does not behave as intended and extends further than expected.
+
+**Reprex:**
+
+```{r}
+# Load necessary libraries
+library(terra)
+library(ggplot2)
+library(tidyterra)
+
+# Load the dataset and create the splitting line
+PartialBilag <- terra::vect("Bilag.shp")
+
+latitudes <- c((55 + 56.245/60), (55 + 56.719/60))
+longitudes <- c((11 + 54.364/60), (11 + 54.279/60))
+
+Border_Roskilde <- data.frame(lon = longitudes, lat = latitudes) |>
+  terra::vect(geom = c("lon", "lat"), crs = "+proj=longlat +datum=WGS84") |>
+  terra::project("EPSG:25832") |>
+  terra::as.lines()
+
+# Visualize the data
+ggplot() +
+  geom_spatvector(data = PartialBilag, fill = "blue") +
+  geom_spatvector(data = Border_Roskilde, color = "red") +
+  theme_bw()
+```
+
+## Problematic Behavior:
+
+The issue arises when I attempt to use the terra::split function to split the polygon using the defined line:
+
+```{r}
+Splited_Bilag <- terra::split(PartialBilag, Border_Roskilde)
+Splited_Bilag$Polygon <- c("A", "B")
+
+ggplot() + geom_spatvector(data = Splited_Bilag, aes(fill = Polygon)) + theme_bw()
+```
+
+*Observation:*
+
+As you can see, the split operation extends the line southwards, covering a larger area than intended. The expected behavior was for the split to occur precisely along the defined line, rather than extending further south.
+
+*Desired Functionality:*
+
+In my understanding, the terra::split function should only utilize the specified line for the splitting operation, without extending the split southwards. I would appreciate clarification on whether this is the intended functionality or if there's a workaround to achieve the desired outcome.
+
+Thank you for your attention and assistance in resolving this matter.
+
+Best regards,
+
+Derek
+
+<details style="margin-bottom:10px;">
+<summary>Standard output and standard error</summary>
+`O:/Nat_Sustain-tmp/SplitError/ReprexSplit_reprex_std_out_err.txt`
+</details>
+
+<details style="margin-bottom:10px;">
+<summary>Session info</summary>
+```{r }
+sessioninfo::session_info()
+```
+</details>
